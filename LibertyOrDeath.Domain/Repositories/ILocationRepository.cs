@@ -1,7 +1,8 @@
-﻿using System;
+﻿using LibertyOrDeath.Domain.Entities;
+
 namespace LibertyOrDeath.Domain.Repositories
 {
-    public interface ILocationRepository
+    public interface ILocationRepository : IReadRepository<Location>
     {
     }
 }
