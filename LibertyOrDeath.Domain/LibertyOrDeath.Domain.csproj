@@ -18,4 +18,7 @@
     <Folder Include="ValueTypes\Indian\" />
     <Folder Include="Extensions\" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LibertyOrDeath.Common\LibertyOrDeath.Common.csproj" />
+  </ItemGroup>
 </Project>

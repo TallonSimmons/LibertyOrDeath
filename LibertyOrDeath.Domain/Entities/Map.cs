@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace LibertyOrDeath.Domain.Entities
 {
@@ -11,5 +12,15 @@ namespace LibertyOrDeath.Domain.Entities
         }
 
         public IEnumerable<Location> Locations { get; }
+
+        public IEnumerable<Location> GetAdjacentLocations(Location location)
+        {
+            if(location == null)
+            {
+                return new List<Location>();
+            }
+
+            return Locations.Where(x => location.AdjacentLocations.Any(adj => adj.Equals(x.Name)));
+        }
     }
 }

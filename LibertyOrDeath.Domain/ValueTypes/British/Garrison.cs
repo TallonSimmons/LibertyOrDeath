@@ -4,6 +4,7 @@ using System.Linq;
 using LibertyOrDeath.Domain.Entities;
 using LibertyOrDeath.Domain.Enums;
 using LibertyOrDeath.Domain.Extensions;
+using LibertyOrDeath.Common.Location;
 
 namespace LibertyOrDeath.Domain.ValueTypes.British
 {
@@ -44,8 +45,15 @@ namespace LibertyOrDeath.Domain.ValueTypes.British
 
                 while (destinationLocation.Control != Control.British && piecesToPlace)
                 {
+                    if(originLocation == null && validOriginLocations.Any())
+                    {
+                        originLocation = validOriginLocations.Random();
+                    }
+                    else if(originLocation == null && !validOriginLocations.Any())
+                    {
+                        break;
+                    }
                     MoveRegulars(originLocation, destinationLocation);
-                    UpdateLocationsWherePiecesMoved(locationsWherePiecesMoved, destinationLocation);
 
                     if (!originLocation.IsValidGarrisonOriginLocation())
                     {
@@ -71,6 +79,10 @@ namespace LibertyOrDeath.Domain.ValueTypes.British
                 }
             }
         }
+
+        public bool Success { get; private set; }
+        public Map MapAfterCommand { get; }
+        public List<BritishMovement> CommandMovements { get; private set; } = new List<BritishMovement>();
 
         private void ActivateMilitia()
         {
@@ -100,17 +112,24 @@ namespace LibertyOrDeath.Domain.ValueTypes.British
 
         private void DisperseRebellionPieces()
         {
-            var highestPriorityDispersalLocation = MapAfterCommand.Locations
+            var highestPriorityDispersalLocation = MapAfterCommand?.Locations?
                     .OrderBy(x => x.TotalRebellionPresence)
                     .FirstOrDefault(x => x.IsNotBlockaded
                         && x.PatriotPresence.Unfortified
                         && x.Control == Control.British
                         && x.LocationType == LocationType.City);
 
-            var highestPriorityAdjacentLocation = highestPriorityDispersalLocation.AdjacentLocations
+            var highestPriorityAdjacentLocation = MapAfterCommand?
+                .GetAdjacentLocations(highestPriorityDispersalLocation)
                 .OrderByDescending(x => x.Opposition)
                 .ThenByDescending(x => x.Population)
                 .FirstOrDefault();
+
+
+            if (highestPriorityDispersalLocation == null || highestPriorityAdjacentLocation == null)
+            {
+                return;
+            }
 
             highestPriorityAdjacentLocation.PatriotPresence.Continentals = highestPriorityDispersalLocation.PatriotPresence.Continentals;
             highestPriorityAdjacentLocation.PatriotPresence.UnderGroundMilitia = highestPriorityDispersalLocation.PatriotPresence.UnderGroundMilitia;
@@ -128,35 +147,40 @@ namespace LibertyOrDeath.Domain.ValueTypes.British
             return validOriginLocations.Random();
         }
 
-        private static void UpdateLocationsWherePiecesMoved(List<Location> locationsWherePiecesMoved, Location destinationLocation)
-        {
-            if (!locationsWherePiecesMoved.Any(x => x.Id.Equals(destinationLocation.Id)))
-            {
-                locationsWherePiecesMoved.Add(destinationLocation);
-            }
-        }
 
         private void MoveRegulars(Location originLocation, Location destinationLocation)
         {
             originLocation.BritishPresence.Regulars--;
             destinationLocation.BritishPresence.Regulars++;
+            var existingMovement = CommandMovements
+                .FirstOrDefault(x => x.OriginLocation.Name.Equals(originLocation.Name)
+                            && x.DestinationLocation.Name.Equals(destinationLocation.Name));
+
+            if (existingMovement != null)
+            {
+                existingMovement.RegularsMoved++;
+            }
+            else
+            {
+                CommandMovements.Add(new BritishMovement(originLocation, destinationLocation, 1, 0));
+            }
         }
 
         private static List<Location> GetDestinations(Map map, IEnumerable<Location> highPriorityDestinationLocations)
         {
             var highPriorityDestinations = highPriorityDestinationLocations
                                 .OrderBy(x => x.TotalRebellionPresence);
-            var nyc = map.Locations.FirstOrDefault(x => x.Name.Equals("New York City"));
             var lowPriorityDestinations = map.Locations.Where(x => x.IsLowPriorityGarrisonLocation());
 
             var allDestinations = new List<Location>();
             allDestinations.AddRange(highPriorityDestinations);
-            allDestinations.Add(nyc);
+            if(!highPriorityDestinations.Any(x => x.Name.Equals(LocationNames.NewYorkCity)))
+            {
+                allDestinations.Add(map.Locations.FirstOrDefault(x => x.Name.Equals(LocationNames.NewYorkCity)));
+            }
             allDestinations.AddRange(lowPriorityDestinations);
             return allDestinations;
         }
 
-        public bool Success { get; private set; }
-        public Map MapAfterCommand { get; }
     }
 }

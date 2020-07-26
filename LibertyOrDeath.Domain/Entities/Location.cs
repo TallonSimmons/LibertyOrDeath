@@ -9,7 +9,7 @@ namespace LibertyOrDeath.Domain.Entities
 {
     public class Location
     {
-        public Location(string name, int population, PatriotPresence patriotPresence, BritishPresence britishPresence, FrenchPresence frenchPresence, IndianPresence indianPresence, Opposition opposition, LocationType locationType, IEnumerable<Location> adjacentLocations)
+        public Location(string name, int population, PatriotPresence patriotPresence, BritishPresence britishPresence, FrenchPresence frenchPresence, IndianPresence indianPresence, Opposition opposition, LocationType locationType, IEnumerable<string> adjacentLocations)
         {
             Name = name;
             Population = population;
@@ -31,7 +31,7 @@ namespace LibertyOrDeath.Domain.Entities
         public IndianPresence IndianPresence { get; }
         public Opposition Opposition { get; }
         public LocationType LocationType { get; }
-        public IEnumerable<Location> AdjacentLocations { get; }
+        public IEnumerable<string> AdjacentLocations { get; }
         public Control Control
         {
             get
